@@ -1,3 +1,4 @@
+from collections import Counter
 from datetime import datetime, timezone
 from typing import Protocol
 
@@ -10,6 +11,7 @@ class Repository(Protocol):
     def list_ros(self) -> list[str]: ...
     def list_pius(self, ro: str) -> list[str]: ...
     def list_projects(self, ro: str, piu: str) -> list[dict]: ...
+    def list_project_hierarchy(self) -> list[dict]: ...
     def get_project_detail(self, upc: str) -> dict | None: ...
     def set_certification(self, upc: str, status: str) -> bool: ...
     def list_rob_rubs(self, page: int, page_size: int, search: str, state: str,
@@ -67,6 +69,19 @@ class SupabaseRepository:
         )
         counts = {upc: sum(row["upc"] == upc for row in mappings) for upc in upcs}
         return [{**project, "mapped_rob_rub_count": counts.get(project["upc"], 0)} for project in projects]
+
+    def list_project_hierarchy(self) -> list[dict]:
+        projects = self._fetch_all(
+            self.client.table("projects")
+            .select("ro,piu,project_name,upc,certification_status,certified_at")
+            .order("project_name")
+        )
+        mappings = self._fetch_all(
+            self.client.table("rob_rub_project_mapping").select("upc")
+        )
+        counts = Counter(row["upc"] for row in mappings if row.get("upc"))
+        return [{**project, "mapped_rob_rub_count": counts[project["upc"]]}
+                for project in projects]
 
     def get_project_detail(self, upc: str) -> dict | None:
         rows = (self.client.table("projects")
@@ -190,7 +205,7 @@ class SupabaseRepository:
             return {}
         rows = (
             self.client.table("rob_rub_master")
-            .select("proposal_id,state")
+            .select("proposal_id,proposal_date,name_of_work,division_railway,state,associated_road_authority,category_of_road,name_of_road")
             .in_("proposal_id", proposal_ids)
             .execute()
             .data

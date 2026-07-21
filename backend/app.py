@@ -1,4 +1,5 @@
 import csv
+from datetime import datetime, timezone
 from io import StringIO
 from typing import Literal
 
@@ -6,8 +7,8 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
-from backend.models import (CertificationRequest, MappingRequest, MappingResponse,
-                        MappingResult, ProjectDetail, ProjectSummary,
+from backend.models import (CertificationRequest, MappedRobRub, MappingRequest, MappingResponse,
+                        MappingResult, ProjectDetail, ProjectHierarchy, ProjectSummary,
                         RobRubFilters, RobRubPage, DashboardResponse)
 from backend.repository import Repository, create_repository
 
@@ -42,13 +43,15 @@ def create_app(repository: Repository | None = None) -> FastAPI:
     def list_pius(ro: str = Query(min_length=1)):
         return repo().list_pius(ro.strip())
 
-    @app.get("/api/projects", response_model=list[ProjectSummary] | ProjectDetail)
-    def list_projects(ro: str = "", piu: str = "", upc: str = ""):
+    @app.get("/api/projects", response_model=list[ProjectSummary] | ProjectDetail | ProjectHierarchy)
+    def list_projects(ro: str = "", piu: str = "", upc: str = "", hierarchy: bool = False):
         if upc.strip():
             project = repo().get_project_detail(upc.strip())
             if not project:
                 raise HTTPException(404, "Selected project was not found.")
             return project
+        if hierarchy:
+            return {"projects": repo().list_project_hierarchy()}
         if not ro.strip() or not piu.strip():
             raise HTTPException(422, "RO and PIU are required.")
         return repo().list_projects(ro.strip(), piu.strip())
@@ -108,6 +111,7 @@ def create_app(repository: Repository | None = None) -> FastAPI:
         seen: set[str] = set()
         rows: list[dict] = []
         results: list[MappingResult] = []
+        saved_records: list[MappedRobRub] = []
 
         for proposal_id in cleaned_ids:
             if not proposal_id or proposal_id not in master:
@@ -129,14 +133,20 @@ def create_app(repository: Repository | None = None) -> FastAPI:
                     message="This ID is already mapped to a project.",
                 ))
             else:
-                rows.append({
+                date_mapped = datetime.now(timezone.utc)
+                row = {
                     "proposal_id": proposal_id,
                     "upc": project["upc"],
                     "project_name": project["project_name"],
                     "piu": project["piu"],
                     "regional_office": project["ro"],
                     "state": master[proposal_id].get("state"),
-                })
+                    "date_mapped": date_mapped.isoformat(),
+                }
+                rows.append(row)
+                saved_records.append(MappedRobRub(
+                    **master[proposal_id], date_mapped=date_mapped
+                ))
                 results.append(MappingResult(
                     proposal_id=proposal_id,
                     status="saved",
@@ -145,7 +155,7 @@ def create_app(repository: Repository | None = None) -> FastAPI:
             seen.add(proposal_id)
 
         repository_instance.insert_mappings(rows)
-        return MappingResponse(results=results)
+        return MappingResponse(results=results, saved_records=saved_records)
 
     return app
 

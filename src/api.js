@@ -14,6 +14,7 @@ export const api = {
   getRos: () => request('/api/ros'),
   getPius: (ro) => request(`/api/pius?ro=${encodeURIComponent(ro)}`),
   getProjects: (ro, piu) => request(`/api/projects?${query({ ro, piu })}`),
+  getProjectHierarchy: () => request('/api/projects?hierarchy=true'),
   getProject: (upc) => request(`/api/projects?${query({ upc })}`),
   setCertification: (upc, status) => request(`/api/projects?${query({ upc })}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) }),
   createMappings: (upc, proposalIds) => request('/api/mappings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ upc, proposal_ids: proposalIds }) }),

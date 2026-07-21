@@ -1,0 +1,6 @@
+.mapped-details{margin-top:30px;padding-top:24px;border-top:1px solid #dfe7f1}
+.mapped-details h2{margin-bottom:4px}
+.mapped-details-note{margin-top:0;color:#64738a}
+.mapped-details table{min-width:1180px}
+.mapped-details tbody tr:hover{background:#f7fafc}
+.mapped-details td:first-child strong{color:#176347;white-space:nowrap}

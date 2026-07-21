@@ -17,10 +17,19 @@ class ProjectSummary(Project):
     mapped_rob_rub_count: int = 0
 
 
+class ProjectHierarchy(BaseModel):
+    projects: list[ProjectSummary]
+
+
 class MappedRobRub(BaseModel):
     proposal_id: str
+    proposal_date: str | None = None
     name_of_work: str | None = None
+    division_railway: str | None = None
     state: str | None = None
+    associated_road_authority: str | None = None
+    category_of_road: str | None = None
+    name_of_road: str | None = None
     date_mapped: datetime
 
 
@@ -100,3 +109,4 @@ class MappingResult(BaseModel):
 
 class MappingResponse(BaseModel):
     results: list[MappingResult]
+    saved_records: list[MappedRobRub] = []

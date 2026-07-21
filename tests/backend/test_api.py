@@ -33,6 +33,12 @@ class FakeRepository:
                  "mapped_rob_rub_count": sum(m["upc"] == p["upc"] for m in self.mappings)}
                 for p in self.projects if p["ro"] == ro and p["piu"] == piu]
 
+    def list_project_hierarchy(self):
+        return [{**p, "certification_status": p.get("certification_status", "pending"),
+                 "certified_at": p.get("certified_at"),
+                 "mapped_rob_rub_count": sum(m["upc"] == p["upc"] for m in self.mappings)}
+                for p in self.projects]
+
     def get_project(self, upc):
         return next((p for p in self.projects if p["upc"] == upc), None)
 
@@ -106,6 +112,15 @@ def test_hierarchy_endpoints_filter_projects():
     ]
 
 
+def test_project_hierarchy_returns_all_projects_with_mapping_counts():
+    client, _ = make_client()
+    response = client.get("/api/projects", params={"hierarchy": "true"})
+    assert response.status_code == 200
+    projects = response.json()["projects"]
+    assert {row["upc"] for row in projects} == {"UPC-001", "UPC-002", "UPC-003"}
+    assert next(row for row in projects if row["upc"] == "UPC-001")["mapped_rob_rub_count"] == 1
+
+
 def test_project_can_be_certified_without_mappings_and_reopened():
     client, _ = make_client()
     detail = client.get("/api/projects", params={"upc": "UPC-002"})
@@ -148,6 +163,11 @@ def test_one_project_accepts_multiple_valid_rob_rub_ids():
     assert [item["status"] for item in response.json()["results"]] == ["saved", "saved"]
     assert len(repository.inserted) == 2
     assert {row["upc"] for row in repository.inserted} == {"UPC-003"}
+    saved = response.json()["saved_records"]
+    assert [row["proposal_id"] for row in saved] == ["ROB-001", "ROB-003"]
+    assert saved[0]["name_of_work"] == "Delhi ROB"
+    assert saved[0]["state"] == "Delhi"
+    assert saved[0]["date_mapped"]
 
 
 def test_mapping_returns_per_id_invalid_duplicate_and_existing_results():
@@ -165,6 +185,7 @@ def test_mapping_returns_per_id_invalid_duplicate_and_existing_results():
         ("RUB-002", "already_mapped"),
     ]
     assert len(repository.inserted) == 1
+    assert [row["proposal_id"] for row in response.json()["saved_records"]] == ["ROB-001"]
 
 
 def test_unknown_project_is_rejected():
