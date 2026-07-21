@@ -111,11 +111,13 @@ def test_hierarchy_endpoints_filter_projects():
 
 def test_project_can_be_certified_without_mappings_and_reopened():
     client, _ = make_client()
-    certified = client.patch("/api/projects/UPC-002/certification", json={"status": "certified"})
+    detail = client.get("/api/projects", params={"upc": "UPC-002"})
+    assert detail.status_code == 200
+    certified = client.patch("/api/projects", params={"upc": "UPC-002"}, json={"status": "certified"})
     assert certified.status_code == 200
     assert certified.json()["certification_status"] == "certified"
     assert certified.json()["certified_at"] is not None
-    reopened = client.patch("/api/projects/UPC-002/certification", json={"status": "pending"})
+    reopened = client.patch("/api/projects", params={"upc": "UPC-002"}, json={"status": "pending"})
     assert reopened.json()["certification_status"] == "pending"
     assert reopened.json()["certified_at"] is None
 

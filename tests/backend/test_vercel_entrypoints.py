@@ -15,8 +15,6 @@ def test_nested_vercel_routes_have_physical_entrypoints():
     for path in (
         "api/rob-rubs.py",
         "api/rob-rubs/filters.py",
-        "api/projects/[upc].py",
-        "api/projects/[upc]/certification.py",
         "api/dashboard.csv.py",
     ):
         assert (root / path).is_file(), path

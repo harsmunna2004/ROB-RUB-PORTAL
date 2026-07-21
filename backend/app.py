@@ -42,21 +42,19 @@ def create_app(repository: Repository | None = None) -> FastAPI:
     def list_pius(ro: str = Query(min_length=1)):
         return repo().list_pius(ro.strip())
 
-    @app.get("/api/projects", response_model=list[ProjectSummary])
-    def list_projects(
-        ro: str = Query(min_length=1), piu: str = Query(min_length=1)
-    ):
+    @app.get("/api/projects", response_model=list[ProjectSummary] | ProjectDetail)
+    def list_projects(ro: str = "", piu: str = "", upc: str = ""):
+        if upc.strip():
+            project = repo().get_project_detail(upc.strip())
+            if not project:
+                raise HTTPException(404, "Selected project was not found.")
+            return project
+        if not ro.strip() or not piu.strip():
+            raise HTTPException(422, "RO and PIU are required.")
         return repo().list_projects(ro.strip(), piu.strip())
 
-    @app.get("/api/projects/{upc}", response_model=ProjectDetail)
-    def get_project_detail(upc: str):
-        project = repo().get_project_detail(upc.strip())
-        if not project:
-            raise HTTPException(404, "Selected project was not found.")
-        return project
-
-    @app.patch("/api/projects/{upc}/certification", response_model=ProjectDetail)
-    def update_certification(upc: str, payload: CertificationRequest):
+    @app.patch("/api/projects", response_model=ProjectDetail)
+    def update_certification(payload: CertificationRequest, upc: str = Query(min_length=1)):
         repository_instance = repo()
         if not repository_instance.set_certification(upc.strip(), payload.status):
             raise HTTPException(404, "Selected project was not found.")
