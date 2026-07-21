@@ -51,6 +51,15 @@ class FakeRepository:
     def insert_mappings(self, rows):
         self.inserted.extend(rows)
 
+    def delete_mapping(self, upc, proposal_id):
+        before = len(self.mappings)
+        self.mappings = [row for row in self.mappings
+                         if not (row["upc"] == upc and row["proposal_id"] == proposal_id)]
+        if len(self.mappings) < before:
+            self.existing.discard((proposal_id, upc))
+            return True
+        return False
+
     def get_project_detail(self, upc):
         project = self.get_project(upc)
         if not project:
@@ -210,3 +219,36 @@ def test_empty_proposal_id_list_is_rejected():
     client, _ = make_client()
     response = client.post("/api/mappings", json={"upc": "UPC-001", "proposal_ids": []})
     assert response.status_code == 422
+
+
+def test_pending_project_mapping_can_be_deleted_without_touching_master():
+    client, repository = make_client()
+    before_master = dict(repository.master)
+    response = client.delete(
+        "/api/mappings", params={"upc": "UPC-001", "proposal_id": "RUB-002"}
+    )
+    assert response.status_code == 200
+    assert response.json() == {
+        "proposal_id": "RUB-002", "message": "Mapping deleted successfully."
+    }
+    assert repository.master == before_master
+    assert all(row["proposal_id"] != "RUB-002" for row in repository.mappings)
+
+
+def test_certified_project_mapping_cannot_be_deleted():
+    client, repository = make_client()
+    repository.projects[0]["certification_status"] = "certified"
+    response = client.delete(
+        "/api/mappings", params={"upc": "UPC-001", "proposal_id": "RUB-002"}
+    )
+    assert response.status_code == 409
+    assert any(row["proposal_id"] == "RUB-002" for row in repository.mappings)
+
+
+def test_mapping_delete_requires_exact_project_and_proposal_pair():
+    client, repository = make_client()
+    response = client.delete(
+        "/api/mappings", params={"upc": "UPC-003", "proposal_id": "RUB-002"}
+    )
+    assert response.status_code == 404
+    assert any(row["proposal_id"] == "RUB-002" for row in repository.mappings)

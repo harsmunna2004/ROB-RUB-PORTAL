@@ -18,6 +18,7 @@ export const api = {
   getProject: (upc) => request(`/api/projects?${query({ upc })}`),
   setCertification: (upc, status) => request(`/api/projects?${query({ upc })}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) }),
   createMappings: (upc, proposalIds) => request('/api/mappings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ upc, proposal_ids: proposalIds }) }),
+  deleteMapping: (upc, proposalId) => request(`/api/mappings?${query({ upc, proposal_id: proposalId })}`, { method: 'DELETE' }),
   getRobRubs: (params) => request(`/api/rob-rubs?${query(params)}`),
   getRobRubFilters: () => request('/api/rob-rubs/filters'),
   getDashboard: (params) => request(`/api/dashboard?${query(params)}`),

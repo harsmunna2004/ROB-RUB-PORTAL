@@ -23,6 +23,7 @@ class Repository(Protocol):
     def get_master_records(self, proposal_ids: list[str]) -> dict[str, dict]: ...
     def get_existing_mappings(self, proposal_ids: list[str]) -> set[str]: ...
     def insert_mappings(self, rows: list[dict]) -> None: ...
+    def delete_mapping(self, upc: str, proposal_id: str) -> bool: ...
 
 
 class SupabaseRepository:
@@ -227,6 +228,17 @@ class SupabaseRepository:
     def insert_mappings(self, rows: list[dict]) -> None:
         if rows:
             self.client.table("rob_rub_project_mapping").insert(rows).execute()
+
+    def delete_mapping(self, upc: str, proposal_id: str) -> bool:
+        rows = (
+            self.client.table("rob_rub_project_mapping")
+            .delete()
+            .eq("upc", upc)
+            .eq("proposal_id", proposal_id)
+            .execute()
+            .data
+        )
+        return bool(rows)
 
 
 def create_repository() -> SupabaseRepository:

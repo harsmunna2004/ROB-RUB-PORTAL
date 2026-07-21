@@ -4,3 +4,6 @@
 .mapped-details table{min-width:1180px}
 .mapped-details tbody tr:hover{background:#f7fafc}
 .mapped-details td:first-child strong{color:#176347;white-space:nowrap}
+.delete-mapping{border:1px solid #d79a9a;border-radius:8px;padding:7px 11px;background:#fff1f1;color:#9a2929;font-weight:800;cursor:pointer}
+.delete-mapping:hover:not(:disabled){background:#9a2929;color:#fff}
+.delete-mapping:disabled{opacity:.55;cursor:wait}

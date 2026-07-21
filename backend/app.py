@@ -18,7 +18,7 @@ def create_app(repository: Repository | None = None) -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
-        allow_methods=["GET", "POST", "PATCH"],
+        allow_methods=["GET", "POST", "PATCH", "DELETE"],
         allow_headers=["*"],
     )
 
@@ -156,6 +156,21 @@ def create_app(repository: Repository | None = None) -> FastAPI:
 
         repository_instance.insert_mappings(rows)
         return MappingResponse(results=results, saved_records=saved_records)
+
+    @app.delete("/api/mappings")
+    def delete_mapping(upc: str = Query(min_length=1),
+                       proposal_id: str = Query(min_length=1)):
+        repository_instance = repo()
+        project = repository_instance.get_project_detail(upc.strip())
+        if not project:
+            raise HTTPException(404, "Selected project was not found.")
+        if project.get("certification_status", "pending") != "pending":
+            raise HTTPException(409, "Reopen the project before deleting a mapping.")
+        cleaned_proposal_id = proposal_id.strip()
+        if not repository_instance.delete_mapping(upc.strip(), cleaned_proposal_id):
+            raise HTTPException(404, "This mapping was not found for the selected project.")
+        return {"proposal_id": cleaned_proposal_id,
+                "message": "Mapping deleted successfully."}
 
     return app
 
