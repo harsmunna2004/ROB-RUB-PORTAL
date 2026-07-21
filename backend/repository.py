@@ -13,7 +13,7 @@ class Repository(Protocol):
     def get_project_detail(self, upc: str) -> dict | None: ...
     def set_certification(self, upc: str, status: str) -> bool: ...
     def list_rob_rubs(self, page: int, page_size: int, search: str, state: str,
-                      district: str, category: str, division: str,
+                      category: str, division: str,
                       mapping_status: str) -> dict: ...
     def get_rob_rub_filters(self) -> dict: ...
     def get_dashboard(self, ro: str = "", piu: str = "") -> dict: ...
@@ -76,13 +76,15 @@ class SupabaseRepository:
             return None
         mappings = self._fetch_all(
             self.client.table("rob_rub_project_mapping")
-            .select("proposal_id,date_mapped,rob_rub_master(name_of_work,district,state)")
+            .select("proposal_id,date_mapped")
             .eq("upc", upc)
         )
-        cleaned = []
-        for row in mappings:
-            master = row.pop("rob_rub_master", None) or {}
-            cleaned.append({**row, **master})
+        proposal_ids = [row["proposal_id"] for row in mappings]
+        master_rows = [] if not proposal_ids else self._fetch_all(
+            self.client.table("rob_rub_master").select("*").in_("proposal_id", proposal_ids)
+        )
+        master_by_id = {row["proposal_id"]: row for row in master_rows}
+        cleaned = [{**row, **master_by_id.get(row["proposal_id"], {})} for row in mappings]
         return {**rows[0], "mapped_rob_rub_count": len(cleaned), "mappings": cleaned}
 
     def set_certification(self, upc: str, status: str) -> bool:
@@ -98,7 +100,7 @@ class SupabaseRepository:
         )
         return master, mappings
 
-    def list_rob_rubs(self, page, page_size, search, state, district, category,
+    def list_rob_rubs(self, page, page_size, search, state, category,
                       division, mapping_status):
         master, mappings = self._master_and_mappings()
         by_proposal = {row["proposal_id"]: row for row in mappings}
@@ -114,8 +116,8 @@ class SupabaseRepository:
             needle = search.casefold()
             rows = [row for row in rows if any(needle in str(value).casefold()
                     for value in row.values() if value is not None)]
-        exact = (("state", state), ("district", district),
-                 ("category_of_road", category), ("division_railway", division))
+        exact = (("state", state), ("category_of_road", category),
+                 ("division_railway", division))
         for field, value in exact:
             if value:
                 rows = [row for row in rows if row.get(field) == value]
@@ -130,8 +132,7 @@ class SupabaseRepository:
         master, _ = self._master_and_mappings()
         def distinct(field):
             return sorted({row[field] for row in master if row.get(field)})
-        return {"states": distinct("state"), "districts": distinct("district"),
-                "categories": distinct("category_of_road"),
+        return {"states": distinct("state"), "categories": distinct("category_of_road"),
                 "divisions": distinct("division_railway")}
 
     @staticmethod

@@ -1,6 +1,9 @@
 async function request(url, options) {
   const response = await fetch(url, options)
-  const data = await response.json()
+  const contentType = response.headers?.get?.('content-type') || ''
+  const data = (contentType.includes('application/json') || typeof response.text !== 'function')
+    ? await response.json()
+    : { detail: await response.text() }
   if (!response.ok) throw new Error(data.detail || 'Something went wrong. Please try again.')
   return data
 }

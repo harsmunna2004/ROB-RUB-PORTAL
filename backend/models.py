@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
@@ -20,7 +20,6 @@ class ProjectSummary(Project):
 class MappedRobRub(BaseModel):
     proposal_id: str
     name_of_work: str | None = None
-    district: str | None = None
     state: str | None = None
     date_mapped: datetime
 
@@ -35,10 +34,9 @@ class CertificationRequest(BaseModel):
 
 class RobRubRecord(BaseModel):
     proposal_id: str
-    proposal_date: date | None = None
+    proposal_date: str | None = None
     name_of_work: str | None = None
     division_railway: str | None = None
-    district: str | None = None
     state: str | None = None
     associated_road_authority: str | None = None
     category_of_road: str | None = None
@@ -57,7 +55,6 @@ class RobRubPage(BaseModel):
 
 class RobRubFilters(BaseModel):
     states: list[str]
-    districts: list[str]
     categories: list[str]
     divisions: list[str]
 

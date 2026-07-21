@@ -63,11 +63,11 @@ def create_app(repository: Repository | None = None) -> FastAPI:
     @app.get("/api/rob-rubs", response_model=RobRubPage)
     def list_rob_rubs(page: int = Query(1, ge=1),
                       page_size: int = Query(25, ge=1, le=100), search: str = "",
-                      state: str = "", district: str = "", category: str = "",
+                      state: str = "", category: str = "",
                       division: str = "",
                       mapping_status: Literal["all", "mapped", "pending"] = "all"):
         return repo().list_rob_rubs(page, page_size, search.strip(), state.strip(),
-                                    district.strip(), category.strip(), division.strip(),
+                                    category.strip(), division.strip(),
                                     mapping_status)
 
     @app.get("/api/rob-rubs/filters", response_model=RobRubFilters)

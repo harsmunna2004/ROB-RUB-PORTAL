@@ -11,9 +11,9 @@ class FakeRepository:
             {"ro": "Mumbai", "piu": "Thane", "project_name": "Thane Bypass", "upc": "UPC-003"},
         ]
         self.master = {
-            "ROB-001": {"proposal_id": "ROB-001", "state": "Delhi", "district": "New Delhi", "name_of_work": "Delhi ROB"},
-            "RUB-002": {"proposal_id": "RUB-002", "state": "Haryana", "district": "Gurugram", "name_of_work": "Gurugram RUB"},
-            "ROB-003": {"proposal_id": "ROB-003", "state": "Maharashtra", "district": "Thane", "name_of_work": "Thane ROB"},
+            "ROB-001": {"proposal_id": "ROB-001", "state": "Delhi", "name_of_work": "Delhi ROB"},
+            "RUB-002": {"proposal_id": "RUB-002", "state": "Haryana", "name_of_work": "Gurugram RUB"},
+            "ROB-003": {"proposal_id": "ROB-003", "state": "Maharashtra", "name_of_work": "Thane ROB"},
         }
         self.existing = {("RUB-002", "UPC-001")}
         self.inserted = []
@@ -62,7 +62,7 @@ class FakeRepository:
         project["certified_at"] = "2026-07-21T00:00:00Z" if status == "certified" else None
         return True
 
-    def list_rob_rubs(self, page, page_size, search, state, district, category, division, mapping_status):
+    def list_rob_rubs(self, page, page_size, search, state, category, division, mapping_status):
         mapped = {m["proposal_id"]: m for m in self.mappings}
         rows = [{**record, "mapping_status": "mapped" if pid in mapped else "pending",
                  "mapped_upc": mapped.get(pid, {}).get("upc"), "mapped_project_name": None}
@@ -71,8 +71,6 @@ class FakeRepository:
             rows = [r for r in rows if search.casefold() in " ".join(str(v) for v in r.values()).casefold()]
         if state:
             rows = [r for r in rows if r.get("state") == state]
-        if district:
-            rows = [r for r in rows if r.get("district") == district]
         if mapping_status != "all":
             rows = [r for r in rows if r["mapping_status"] == mapping_status]
         start = (page - 1) * page_size
@@ -80,7 +78,6 @@ class FakeRepository:
 
     def get_rob_rub_filters(self):
         return {"states": ["Delhi", "Haryana", "Maharashtra"],
-                "districts": ["Gurugram", "New Delhi", "Thane"],
                 "categories": [], "divisions": []}
 
     def get_dashboard(self, ro="", piu=""):
@@ -124,6 +121,7 @@ def test_project_can_be_certified_without_mappings_and_reopened():
 
 def test_rob_rub_register_search_filter_and_pagination():
     client, _ = make_client()
+    assert "districts" not in client.get("/api/rob-rubs/filters").json()
     searched = client.get("/api/rob-rubs", params={"search": "Gurugram"}).json()
     assert searched["total"] == 1
     assert searched["items"][0]["proposal_id"] == "RUB-002"

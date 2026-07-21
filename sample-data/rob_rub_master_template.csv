@@ -1,2 +1,2 @@
-proposal_id,serial_no,proposal_date,name_of_work,division_railway,district,state,associated_road_authority,category_of_road,name_of_road
-ROB-001,1,2026-01-15,Example ROB work,Northern Railway,New Delhi,Delhi,NHAI,National Highway,NH-48
+proposal_id,serial_no,proposal_date,name_of_work,division_railway,state,associated_road_authority,category_of_road,name_of_road
+ROB-001,1,2026-01-15,Example ROB work,Northern Railway,Delhi,NHAI,National Highway,NH-48

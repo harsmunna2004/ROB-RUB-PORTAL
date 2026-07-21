@@ -3,10 +3,9 @@ create extension if not exists pgcrypto;
 create table if not exists public.rob_rub_master (
   proposal_id text primary key,
   serial_no integer,
-  proposal_date date,
+  proposal_date text,
   name_of_work text,
   division_railway text,
-  district text,
   state text,
   associated_road_authority text,
   category_of_road text,

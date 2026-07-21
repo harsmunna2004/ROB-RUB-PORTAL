@@ -68,7 +68,7 @@ Supabase import requires the CSV header names to match the database columns exac
 Your ROB/RUB CSV header must be:
 
 ```text
-proposal_id,serial_no,proposal_date,name_of_work,division_railway,district,state,associated_road_authority,category_of_road,name_of_road
+proposal_id,serial_no,proposal_date,name_of_work,division_railway,state,associated_road_authority,category_of_road,name_of_road
 ```
 
 Your projects CSV header must be:
@@ -88,7 +88,7 @@ Import the files:
 5. Check that every `proposal_id` and every `upc` is unique. Supabase will reject duplicates because they are primary keys.
 6. Check that `ro`, `piu`, `project_name`, and `upc` contain no blank cells.
 
-If `proposal_date` contains invalid dates, correct them to `YYYY-MM-DD`, for example `2026-01-15`, or leave the cell empty.
+`proposal_date` is stored as text, so keep the same date format used by your source data.
 
 ## 6. Obtain the Supabase backend values
 
