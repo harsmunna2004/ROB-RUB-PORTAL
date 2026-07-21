@@ -1,4 +1,4 @@
-from api.repository import SupabaseRepository
+from backend.repository import SupabaseRepository
 
 
 class Result:

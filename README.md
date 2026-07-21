@@ -294,7 +294,7 @@ The proposal ID already belongs to a project. Each proposal ID can be mapped onl
 
 ### Vercel `/api/health` returns 404
 
-- Confirm `api/index.py` is present on GitHub.
+- Confirm the endpoint files under `api/` and `backend/app.py` are present on GitHub.
 - Confirm `requirements.txt` is in the repository root.
 - Remove any catch-all rewrite that includes `/api/`; the supplied negative-lookahead rule intentionally excludes API paths.
 - Review the Vercel build log for Python dependency errors.

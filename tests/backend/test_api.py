@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from api.index import create_app
+from backend.app import create_app
 
 
 class FakeRepository:

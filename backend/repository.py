@@ -3,7 +3,7 @@ from typing import Protocol
 
 from supabase import Client, create_client
 
-from api.config import get_settings
+from backend.config import get_settings
 
 
 class Repository(Protocol):

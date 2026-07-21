@@ -6,10 +6,10 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
-from api.models import (CertificationRequest, MappingRequest, MappingResponse,
+from backend.models import (CertificationRequest, MappingRequest, MappingResponse,
                         MappingResult, ProjectDetail, ProjectSummary,
                         RobRubFilters, RobRubPage, DashboardResponse)
-from api.repository import Repository, create_repository
+from backend.repository import Repository, create_repository
 
 
 def create_app(repository: Repository | None = None) -> FastAPI:
