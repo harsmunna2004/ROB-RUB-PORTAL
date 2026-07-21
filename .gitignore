@@ -6,6 +6,7 @@ node_modules/
 dist/
 .vercel/
 .pytest_cache/
+.superpowers/
 __pycache__/
 *.pyc
 

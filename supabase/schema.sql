@@ -19,6 +19,11 @@ create table if not exists public.projects (
   ro text not null,
   piu text not null,
   project_name text not null,
+  certification_status text not null default 'pending',
+  certified_at timestamptz,
+  constraint projects_certification_status_check check (
+    certification_status in ('pending', 'certified')
+  ),
   constraint projects_values_not_blank check (
     length(trim(upc)) > 0 and length(trim(ro)) > 0 and
     length(trim(piu)) > 0 and length(trim(project_name)) > 0
@@ -38,6 +43,7 @@ create table if not exists public.rob_rub_project_mapping (
 );
 
 create index if not exists projects_ro_piu_idx on public.projects (ro, piu);
+create index if not exists projects_ro_piu_certification_idx on public.projects (ro, piu, certification_status);
 create index if not exists mapping_upc_idx on public.rob_rub_project_mapping (upc);
 create index if not exists mapping_proposal_id_idx on public.rob_rub_project_mapping (proposal_id);
 

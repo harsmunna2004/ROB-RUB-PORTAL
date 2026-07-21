@@ -5,13 +5,17 @@ async function request(url, options) {
   return data
 }
 
+const query = (params) => new URLSearchParams(Object.entries(params).filter(([, value]) => value !== '' && value != null)).toString()
+
 export const api = {
   getRos: () => request('/api/ros'),
   getPius: (ro) => request(`/api/pius?ro=${encodeURIComponent(ro)}`),
-  getProjects: (ro, piu) => request(`/api/projects?ro=${encodeURIComponent(ro)}&piu=${encodeURIComponent(piu)}`),
-  createMappings: (upc, proposalIds) => request('/api/mappings', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ upc, proposal_ids: proposalIds }),
-  }),
+  getProjects: (ro, piu) => request(`/api/projects?${query({ ro, piu })}`),
+  getProject: (upc) => request(`/api/projects/${encodeURIComponent(upc)}`),
+  setCertification: (upc, status) => request(`/api/projects/${encodeURIComponent(upc)}/certification`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) }),
+  createMappings: (upc, proposalIds) => request('/api/mappings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ upc, proposal_ids: proposalIds }) }),
+  getRobRubs: (params) => request(`/api/rob-rubs?${query(params)}`),
+  getRobRubFilters: () => request('/api/rob-rubs/filters'),
+  getDashboard: (params) => request(`/api/dashboard?${query(params)}`),
+  dashboardCsvUrl: (params) => `/api/dashboard.csv?${query(params)}`,
 }

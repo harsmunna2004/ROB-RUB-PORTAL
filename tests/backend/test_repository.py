@@ -19,6 +19,10 @@ class FakeQuery:
         self.rows = [row for row in self.rows if row[column] == value]
         return self
 
+    def in_(self, column, values):
+        self.rows = [row for row in self.rows if row[column] in values]
+        return self
+
     def order(self, column):
         self.rows = sorted(self.rows, key=lambda row: row[column])
         return self
@@ -37,8 +41,11 @@ class FakeClient:
         self.rows = rows
 
     def table(self, name):
-        assert name == "projects"
-        return FakeQuery(list(self.rows))
+        if name == "projects":
+            return FakeQuery(list(self.rows))
+        if name == "rob_rub_project_mapping":
+            return FakeQuery([])
+        raise AssertionError(name)
 
 
 def test_hierarchy_queries_paginate_beyond_supabase_default_limit():

@@ -1,0 +1,12 @@
+import { useEffect, useState } from 'react'
+import { api } from '../api'
+import Breadcrumbs from '../components/Breadcrumbs'
+
+export default function DashboardPage(){
+ const [ros,setRos]=useState([]),[pius,setPius]=useState([]),[ro,setRo]=useState(''),[piu,setPiu]=useState(''),[data,setData]=useState(null),[error,setError]=useState('')
+ useEffect(()=>{api.getRos().then(setRos)},[]); useEffect(()=>{api.getDashboard({ro,piu}).then(setData).catch(e=>setError(e.message))},[ro,piu])
+ async function changeRo(e){const v=e.target.value;setRo(v);setPiu('');setPius(v?await api.getPius(v):[])}
+ const metrics=data?[['Projects Certified',data.totals.projects_certified],['Projects Pending',data.totals.projects_pending],['Total ROBs/RUBs',data.totals.rob_rubs_total],['Mapped ROBs/RUBs',data.totals.rob_rubs_mapped],['Pending ROBs/RUBs',data.totals.rob_rubs_pending]]:[]
+ return <><Breadcrumbs items={[{label:'Dashboard'}]}/><section className="page-heading"><h1>Certification dashboard</h1><p>RO-wise and PIU-wise progress summary.</p></section><section className="card"><div className="page-actions"><div className="filters two"><label>Regional Office (RO)<select value={ro} onChange={changeRo}><option value="">All ROs</option>{ros.map(x=><option key={x}>{x}</option>)}</select></label><label>Project Implementation Unit (PIU)<select value={piu} onChange={e=>setPiu(e.target.value)} disabled={!ro}><option value="">All PIUs</option>{pius.map(x=><option key={x}>{x}</option>)}</select></label></div><a className="button" href={api.dashboardCsvUrl({ro,piu})}>Download CSV</a></div>{error&&<div className="alert error">{error}</div>}{!data?<p>Loading dashboard…</p>:<><div className="metrics">{metrics.map(([label,value])=><div className="metric" key={label}><span>{label}</span><strong>{value}</strong></div>)}</div><Summary title="RO-wise summary" rows={data.ro_summary}/><Summary title="PIU-wise summary" rows={data.piu_summary}/></>}</section></>
+}
+function Summary({title,rows}){return <div className="summary"><h2>{title}</h2><div className="table-scroll"><table><thead><tr><th>RO</th><th>PIU</th><th>Total Projects</th><th>Certified</th><th>Pending</th><th>ROBs/RUBs Mapped</th></tr></thead><tbody>{rows.map((r,i)=><tr key={`${r.ro}-${r.piu}-${i}`}><td>{r.ro}</td><td>{r.piu||'All'}</td><td>{r.projects_total}</td><td>{r.projects_certified}</td><td>{r.projects_pending}</td><td>{r.rob_rubs_mapped}</td></tr>)}</tbody></table></div></div>}

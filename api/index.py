@@ -1,7 +1,14 @@
+import csv
+from io import StringIO
+from typing import Literal
+
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 
-from api.models import MappingRequest, MappingResponse, MappingResult, Project
+from api.models import (CertificationRequest, MappingRequest, MappingResponse,
+                        MappingResult, ProjectDetail, ProjectSummary,
+                        RobRubFilters, RobRubPage, DashboardResponse)
 from api.repository import Repository, create_repository
 
 
@@ -10,7 +17,7 @@ def create_app(repository: Repository | None = None) -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
-        allow_methods=["GET", "POST"],
+        allow_methods=["GET", "POST", "PATCH"],
         allow_headers=["*"],
     )
 
@@ -35,11 +42,59 @@ def create_app(repository: Repository | None = None) -> FastAPI:
     def list_pius(ro: str = Query(min_length=1)):
         return repo().list_pius(ro.strip())
 
-    @app.get("/api/projects", response_model=list[Project])
+    @app.get("/api/projects", response_model=list[ProjectSummary])
     def list_projects(
         ro: str = Query(min_length=1), piu: str = Query(min_length=1)
     ):
         return repo().list_projects(ro.strip(), piu.strip())
+
+    @app.get("/api/projects/{upc}", response_model=ProjectDetail)
+    def get_project_detail(upc: str):
+        project = repo().get_project_detail(upc.strip())
+        if not project:
+            raise HTTPException(404, "Selected project was not found.")
+        return project
+
+    @app.patch("/api/projects/{upc}/certification", response_model=ProjectDetail)
+    def update_certification(upc: str, payload: CertificationRequest):
+        repository_instance = repo()
+        if not repository_instance.set_certification(upc.strip(), payload.status):
+            raise HTTPException(404, "Selected project was not found.")
+        return repository_instance.get_project_detail(upc.strip())
+
+    @app.get("/api/rob-rubs", response_model=RobRubPage)
+    def list_rob_rubs(page: int = Query(1, ge=1),
+                      page_size: int = Query(25, ge=1, le=100), search: str = "",
+                      state: str = "", district: str = "", category: str = "",
+                      division: str = "",
+                      mapping_status: Literal["all", "mapped", "pending"] = "all"):
+        return repo().list_rob_rubs(page, page_size, search.strip(), state.strip(),
+                                    district.strip(), category.strip(), division.strip(),
+                                    mapping_status)
+
+    @app.get("/api/rob-rubs/filters", response_model=RobRubFilters)
+    def rob_rub_filters():
+        return repo().get_rob_rub_filters()
+
+    @app.get("/api/dashboard", response_model=DashboardResponse)
+    def dashboard(ro: str = "", piu: str = ""):
+        return repo().get_dashboard(ro.strip(), piu.strip())
+
+    @app.get("/api/dashboard.csv")
+    def dashboard_csv(ro: str = "", piu: str = ""):
+        data = repo().get_dashboard(ro.strip(), piu.strip())
+        output = StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["RO", "PIU", "Projects Total", "Projects Certified",
+                         "Projects Pending", "ROBs/RUBs Total", "ROBs/RUBs Mapped",
+                         "ROBs/RUBs Pending"])
+        for row in data["piu_summary"]:
+            writer.writerow([row["ro"], row["piu"], row["projects_total"],
+                             row["projects_certified"], row["projects_pending"],
+                             row["rob_rubs_total"], row["rob_rubs_mapped"],
+                             row["rob_rubs_pending"]])
+        return StreamingResponse(iter([output.getvalue()]), media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=rob-rub-dashboard.csv"})
 
     @app.post("/api/mappings", response_model=MappingResponse)
     def create_mappings(payload: MappingRequest):

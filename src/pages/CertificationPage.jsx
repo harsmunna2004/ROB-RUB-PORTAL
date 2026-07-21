@@ -1,0 +1,19 @@
+import { useEffect, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { api } from '../api'
+import Breadcrumbs from '../components/Breadcrumbs'
+import StatusBadge from '../components/StatusBadge'
+
+const newRow=()=>({id:crypto.randomUUID(),value:''})
+export default function CertificationPage(){
+ const {upc}=useParams(), navigate=useNavigate(); const [project,setProject]=useState(null),[decision,setDecision]=useState(''),[rows,setRows]=useState([newRow()]),[results,setResults]=useState([]),[message,setMessage]=useState(''),[error,setError]=useState('')
+ useEffect(()=>{api.getProject(upc).then(setProject).catch(e=>setError(e.message))},[upc])
+ async function save(e){e.preventDefault(); const ids=rows.map(r=>r.value.trim()).filter(Boolean); if(!ids.length)return setError('Enter at least one ROB/RUB ID.'); if(new Set(ids).size!==ids.length)return setError('Enter each ROB/RUB ID only once.'); try{const data=await api.createMappings(upc,ids);setResults(data.results);setProject(await api.getProject(upc));setError('')}catch(e){setError(e.message)}}
+ async function certify(status){if(!window.confirm(status==='certified'?'Certify this project?':'Reopen this project?'))return; try{const data=await api.setCertification(upc,status);setProject(data);setMessage(status==='certified'?'Project certified successfully.':'Project reopened successfully.')}catch(e){setError(e.message)}}
+ if(error&&!project)return <div className="alert error">{error}</div>; if(!project)return <p>Loading project…</p>
+ return <><Breadcrumbs items={[{label:'Projects',to:'/projects'},{label:project.ro},{label:project.piu},{label:project.upc},{label:'Certification'}]}/><div className="page-actions"><button className="button secondary" onClick={()=>navigate(-1)}>← Back</button><Link className="button secondary" to="/rob-rubs">View complete ROB/RUB database</Link></div><section className="page-heading"><h1>{project.project_name}</h1><p>{project.upc} · <StatusBadge status={project.certification_status}/> · {project.mapped_rob_rub_count} mapped</p></section><section className="card">
+ {project.certification_status==='certified'?<><h2>This project is certified</h2><button className="button warning" onClick={()=>certify('pending')}>Reopen project</button></>:<><h2>Are there any ROBs/RUBs in this project?</h2><p>Choose one option before proceeding with certification.</p><div className="choice-row"><button className={`button ${decision==='yes'?'active':''}`} onClick={()=>setDecision('yes')}>Yes, map ROBs/RUBs</button><button className={`button ${decision==='no'?'active':''}`} onClick={()=>setDecision('no')}>No ROBs/RUBs</button></div>
+ {decision==='yes'&&<form onSubmit={save} className="branch"><h3>Map ROBs/RUBs</h3>{rows.map((r,i)=><div className="id-row" key={r.id}><label>ROB/RUB Proposal ID {i+1}<input value={r.value} onChange={e=>setRows(rs=>rs.map(x=>x.id===r.id?{...x,value:e.target.value}:x))}/></label>{rows.length>1&&<button type="button" className="remove-button" onClick={()=>setRows(rs=>rs.filter(x=>x.id!==r.id))}>Remove</button>}</div>)}<button type="button" className="button secondary" onClick={()=>setRows(rs=>[...rs,newRow()])}>+ Add another ROB/RUB</button><button className="button" type="submit">Save mappings</button>{results.map((r,i)=><div className={`result ${r.status}`} key={i}>{r.proposal_id}: {r.message}</div>)}{(project.mapped_rob_rub_count>0||results.some(r=>r.status==='saved'))&&<button type="button" className="button certify" onClick={()=>certify('certified')}>Certify project</button>}</form>}
+ {decision==='no'&&<div className="branch"><h3>Certify without ROB/RUB mapping</h3><p>This project will be certified with zero mappings.</p><button className="button certify" onClick={()=>certify('certified')}>Certify project</button></div>}</>}
+ {error&&<div className="alert error">{error}</div>}{message&&<div className="alert success">{message}</div>}</section></>
+}

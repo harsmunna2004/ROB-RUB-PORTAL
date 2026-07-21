@@ -323,3 +323,13 @@ Example POST body:
 ```
 
 The backend keeps the project name, PIU, RO, and state in the mapping row as a historical snapshot. The authoritative selection still comes from the `projects` table, and the state comes from `rob_rub_master`.
+
+## Certification upgrade deployment
+
+1. Run `supabase/003_add_project_certification.sql` in the Supabase SQL Editor.
+2. Commit and push the application code.
+3. Wait for the Vercel deployment to become **Ready**.
+4. Test `/api/health`, `/api/rob-rubs`, and `/api/dashboard`.
+5. Test `/projects`, `/rob-rubs`, and `/dashboard`, including direct browser refreshes.
+
+Run the SQL migration before deploying because the project grid expects the new certification columns.
